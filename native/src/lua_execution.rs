@@ -1,7 +1,7 @@
 //! Connection point from lua-js to rlua itself.
 use crate::error::Result;
 use crate::value::Value;
-use rlua::prelude::LuaMultiValue;
+use rlua::prelude::{LuaMultiValue, LuaResult};
 use rlua::{FromLua, Lua};
 
 pub fn do_string_sync(lua: &Lua, code: String, chunk_name: Option<String>) -> Result<Value> {
@@ -49,10 +49,14 @@ pub fn register_function<F: 'static + Send + Sync + Fn(Vec<Value>) -> ()>(
 ) -> Result<Value> {
     lua.context(|ctx| {
         let globals = ctx.globals();
+        // TODO if this function fails, it should be passed to an event emitter, on("error")
         let f = ctx.create_function(move |c, args: LuaMultiValue| {
-            let res_val: rlua::Result<Vec<Value>> =
-                args.into_iter().map(|v| Value::from_lua(v, c)).collect();
-            let values = res_val.unwrap();
+            let values: Vec<Value> = args
+                .into_vec()
+                .into_iter()
+                .map(|lua_v| Value::from_lua(lua_v, c))
+                .collect::<LuaResult<Vec<Value>>>()?;
+            // TODO this should have an error CB?
             callback(values);
             Ok(Value::Undefined)
         })?;

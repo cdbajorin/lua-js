@@ -44,14 +44,19 @@ fn register_function<'a, CX: Context<'a>>(
 ) -> JsResult<'a, JsValue> {
     let callback = move |values: Vec<Value>| {
         let handler = handler.clone();
+
         thread::spawn(move || {
             handler.schedule_with(move |event_ctx, this, callback| {
                 let arr = JsArray::new(event_ctx, values.len() as u32);
+                // TODO remove unwraps, handle errors, and pass to callback if needed.
                 for (i, value) in values.into_iter().enumerate() {
                     let js_val = value.to_js(event_ctx).unwrap();
                     arr.set(event_ctx, i as u32, js_val).unwrap();
                 }
-                let args: Vec<Handle<JsValue>> = vec![arr.upcast()];
+                // TODO is this how we handle passing the error?
+                //  technically, this is an event emmiter and not a callback, so it just shouldn't fire
+                //  if there is an error. Not sure how to make it `on` eventemitter vs multi-shot callback
+                let args: Vec<Handle<JsValue>> = vec![event_ctx.null().upcast(), arr.upcast()];
                 let _result = callback.call(event_ctx, this, args);
             });
         });
