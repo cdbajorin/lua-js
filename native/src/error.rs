@@ -1,8 +1,7 @@
 use rlua::prelude::LuaError;
 use std::fmt::Formatter;
 
-
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub enum Error {
     // We're passing as a string because Send is required by
     // Task, and JsValue doesn't implement it. Is an IR error even necessary?
@@ -12,18 +11,19 @@ pub enum Error {
     // Internal(String)
 }
 
-// pub type Result<'a,T> = std::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 impl std::fmt::Display for Error {
-    fn fmt(&self, _f: &mut Formatter<'_>) -> std::fmt::Result {
-        unimplemented!()
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::Lua(e) => write!(f, "{}", e.to_string()),
+        }
     }
 }
 
 impl std::error::Error for Error {
     // TODO implement source, or just rely on error enum instead of struct?
 }
-
 
 impl From<LuaError> for Error {
     fn from(err: LuaError) -> Self {

@@ -3,10 +3,11 @@ export class LuaState {
     /**
      * Executes a string of code synchronously.
      *
-     * @param code {string}
-     * @returns {T}
+     * @param code
+     * @param chunkName
      */
-    doStringSync<T extends []>(code: string): T;
+    doStringSync(code: string, chunkName?: string): undefined;
+    // doStringSync<T extends []>(code: string, chunkName?: string): T;
 
     /**
      * This is more like an event emitter than a callback. It can be invoked
@@ -25,7 +26,8 @@ export class LuaState {
      * @param name
      * @param chunkName
      */
-    doFileSync<T extends []>(name: string, chunkName?: string): T;
+    doFileSync(name: string, chunkName?: string): undefined;
+    // doFileSync<T extends []>(name: string, chunkName?: string): T;
 
     // /**
     //  * @async
