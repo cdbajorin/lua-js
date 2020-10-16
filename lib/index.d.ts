@@ -7,6 +7,7 @@ export class LuaState {
      * @param chunkName
      */
     doStringSync(code: string, chunkName?: string): undefined;
+
     // doStringSync<T extends []>(code: string, chunkName?: string): T;
 
     /**
@@ -17,7 +18,7 @@ export class LuaState {
      * @param name
      * @param cb
      */
-    registerFunction<T extends []>(name: string, cb: (...args: T) => void): void
+    registerFunction<T extends []>(name: string, cb: (args: T) => void): void
 
 
     /**
@@ -27,6 +28,7 @@ export class LuaState {
      * @param chunkName
      */
     doFileSync(name: string, chunkName?: string): undefined;
+
     // doFileSync<T extends []>(name: string, chunkName?: string): T;
 
     // /**
