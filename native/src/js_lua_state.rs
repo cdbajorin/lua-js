@@ -12,20 +12,20 @@ use rlua::Lua;
 
 use neon::declare_types;
 
-fn do_string_sync<'a, CX: Context<'a>>(
-    cx: &mut CX,
+fn do_string_sync<'a>(
+    mut cx: MethodContext<'a, JsLuaState>,
     lua: &Lua,
     code: String,
     name: Option<String>,
 ) -> JsResult<'a, JsValue> {
     match lua_execution::do_string_sync(lua, code, name) {
-        Ok(v) => v.to_js(cx),
+        Ok(v) => v.to_js(&mut cx),
         Err(e) => cx.throw_error(e.to_string()),
     }
 }
 
-fn do_file_sync<'a, CX: Context<'a>>(
-    cx: &mut CX,
+fn do_file_sync<'a>(
+    mut cx: MethodContext<'a, JsLuaState>,
     lua: &Lua,
     filename: String,
     chunk_name: Option<String>,
@@ -36,8 +36,8 @@ fn do_file_sync<'a, CX: Context<'a>>(
     }
 }
 
-fn register_function<'a, CX: Context<'a>>(
-    cx: &mut CX,
+fn register_function<'a>(
+    mut cx: MethodContext<'a, JsLuaState>,
     handler: EventHandler,
     lua: &Lua,
     name: String,
@@ -67,34 +67,36 @@ fn register_function<'a, CX: Context<'a>>(
     }
 }
 
-fn set_global<'a, CX: Context<'a>>(
-    cx: &mut CX,
+fn set_global<'a>(
+    mut cx: MethodContext<'a, JsLuaState>,
     lua: &Lua,
     name: String,
     handle: Handle<'a, JsValue>,
 ) -> JsResult<'a, JsValue> {
-    let set_value = Value::from_js(handle, cx)?;
+    let set_value = Value::from_js(handle, &mut cx)?;
     match lua_execution::set_global(lua, name, set_value) {
-        Ok(v) => v.to_js(cx),
+        Ok(v) => v.to_js(&mut cx),
         Err(e) => cx.throw_error(e.to_string()),
     }
 }
 
-fn get_global<'a, CX: Context<'a>>(cx: &mut CX, lua: &Lua, name: String) -> JsResult<'a, JsValue> {
+fn get_global<'a>(
+    mut cx: MethodContext<'a, JsLuaState>,
+    lua: &Lua,
+    name: String,
+) -> JsResult<'a, JsValue> {
     match lua_execution::get_global(&lua, name) {
-        Ok(v) => v.to_js(cx),
+        Ok(v) => v.to_js(&mut cx),
         Err(e) => cx.throw_error(e.to_string()),
     }
 }
 
 pub struct LuaState {
-    cb: Option<EventHandler>,
     lua: Arc<Lua>,
 }
 
 impl LuaState {
     fn reset(&mut self) -> () {
-        self.cb = None;
         // By creating a new lua state, we remove all
         // references allowing the existing program to exit.
         self.lua = Arc::new(Lua::new());
@@ -106,7 +108,6 @@ declare_types! {
         init(_) {
             // TODO allow for newWith to allow for choosing libraries
             Ok(LuaState {
-                cb: None,
                 lua: Arc::new(Lua::new())
             })
         }
@@ -122,7 +123,7 @@ declare_types! {
                 state.lua.clone()
             };
 
-            register_function(&mut cx, cb, &lua, name)
+            register_function(cx, cb, &lua, name)
         }
 
         method reset(mut cx) {
@@ -157,7 +158,7 @@ declare_types! {
                 let state = this.borrow(&guard);
                 state.lua.clone()
             };
-            do_string_sync(&mut cx, &lua, code, chunk_name)
+            do_string_sync(cx, &lua, code, chunk_name)
         }
 
         method doFileSync(mut cx) {
@@ -174,7 +175,7 @@ declare_types! {
                 let state = this.borrow(&guard);
                 state.lua.clone()
             };
-            do_file_sync(&mut cx, &lua, filename, chunk_name)
+            do_file_sync(cx, &lua, filename, chunk_name)
         }
 
         method setGlobal(mut cx) {
@@ -186,7 +187,7 @@ declare_types! {
                 let state = this.borrow(&guard);
                 state.lua.clone()
             };
-            set_global(&mut cx, &lua, name, value)
+            set_global(cx, &lua, name, value)
         }
 
         method getGlobal(mut cx) {
@@ -197,7 +198,7 @@ declare_types! {
                 let state = this.borrow(&guard);
                 state.lua.clone()
             };
-            get_global(&mut cx, &lua, name)
+            get_global(cx, &lua, name)
         }
     }
 }
