@@ -8,9 +8,94 @@ use crate::value::Value;
 use neon::context::Context;
 use neon::handle::Handle;
 use neon::prelude::*;
-use rlua::Lua;
+use rlua::{Lua, StdLib};
 
 use neon::declare_types;
+
+/// LuaState Class wrapper. Holds on to the lua context reference,
+/// as well as the set of active lua libraries, and (eventually) the registered functions
+pub struct LuaState {
+    libraries: StdLib,
+    lua: Arc<Lua>,
+}
+
+impl LuaState {
+    fn reset(&mut self) -> () {
+        // By creating a new lua state, we remove all references allowing the program
+        // to exit if we've attached any event emitters. Without this, the program won't
+        // close. Is there a more explicit way to close event listeners, or is relying on
+        // the GC a normal/reasonable approach?
+        let lua = unsafe { Lua::unsafe_new_with(self.libraries) };
+        self.lua = Arc::new(lua)
+    }
+}
+
+impl Default for LuaState {
+    fn default() -> Self {
+        LuaState {
+            libraries: StdLib::ALL_NO_DEBUG,
+            lua: Arc::new(Lua::new_with(StdLib::ALL_NO_DEBUG)),
+        }
+    }
+}
+
+fn build_libraries_option(
+    mut cx: CallContext<JsUndefined>,
+    libs: Handle<JsValue>,
+) -> NeonResult<StdLib> {
+    // flag_set is for throwing errors to notify the user of a bad bitflag set.
+    let (flags, flag_set) = if libs.is_a::<JsArray>() {
+        let libflags = libs
+            .downcast_or_throw::<JsArray, CallContext<JsUndefined>>(&mut cx)?
+            .to_vec(&mut cx)?;
+
+        let mut flag_count: u32 = 0;
+        let mut flag_set: Vec<String> = vec![];
+        for value in libflags.into_iter() {
+            let flag = value
+                .downcast_or_throw::<JsNumber, CallContext<JsUndefined>>(&mut cx)?
+                .value() as u32;
+            flag_count += flag;
+            let flag_str = format!("{}", flag);
+            flag_set.push(flag_str);
+        }
+        (flag_count, flag_set)
+    } else {
+        (0 as u32, vec![])
+    };
+    match StdLib::from_bits(flags) {
+        None => {
+            let flag_set_str = flag_set.join(", ");
+            let throw_msg = cx.string(format!(
+                "Cannot find libraries associated with bitflag set [{}]",
+                flag_set_str
+            ));
+            cx.throw(throw_msg)
+        }
+        Some(v) => Ok(v),
+    }
+}
+
+fn init(mut cx: CallContext<JsUndefined>) -> NeonResult<LuaState> {
+    let opt_options = cx.argument_opt(0);
+
+    if let None = opt_options {
+        return Ok(LuaState::default());
+    };
+    let options: Handle<JsObject> = opt_options.unwrap().downcast_or_throw(&mut cx)?;
+    let libraries_key = cx.string("libraries");
+    let libs = options.get(&mut cx, libraries_key)?;
+    let libraries = build_libraries_option(cx, libs)?;
+
+    // Because we're allowing the end user to dynamically choose their libraries,
+    // we're using the unsafe call in case they include `debug`. We need to notify
+    // the end user in the documentation about the caveats of `debug`.
+    let lua = unsafe {
+        let lua = Lua::unsafe_new_with(libraries);
+        Arc::new(lua)
+    };
+    Ok(LuaState { lua, libraries })
+}
 
 fn do_string_sync(
     mut cx: MethodContext<JsLuaState>,
@@ -110,25 +195,11 @@ fn get_global(mut cx: MethodContext<JsLuaState>, name: String) -> JsResult<JsVal
     }
 }
 
-pub struct LuaState {
-    lua: Arc<Lua>,
-}
-
-impl LuaState {
-    fn reset(&mut self) -> () {
-        // By creating a new lua state, we remove all
-        // references allowing the existing program to exit.
-        self.lua = Arc::new(Lua::new());
-    }
-}
-
 declare_types! {
     pub class JsLuaState for LuaState {
-        init(_) {
-            // TODO allow for newWith to allow for choosing included libraries
-            Ok(LuaState {
-                lua: Arc::new(Lua::new())
-            })
+
+        init(cx) {
+            init(cx)
         }
 
         method registerFunction(mut cx) {

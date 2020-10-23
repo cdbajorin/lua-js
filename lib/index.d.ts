@@ -1,4 +1,39 @@
+export const enum LuaLib {
+    Base = 1,
+    Coroutine = 1 << 1,
+    Table = 1 << 2,
+    Io = 1 << 3,
+    Os = 1 << 4,
+    String = 1 << 5,
+    Utf8 = 1 << 6,
+    Math = 1 << 7,
+    Package = 1 << 8,
+    Debug = 1 << 9,
+}
+
+/**
+ * Lua library sets to be included when instantiating a new state.
+ * Default: `AllNoDebug`
+ * The only lib set that includes `debug` is `All`.
+ */
+interface LuaLibSet {
+    All: LuaLib[];
+    AllNoDebug: LuaLib[];
+    /**
+     * Excludes io/os/debug
+     */
+    NoFs: LuaLib[];
+}
+
+export const LuaLibSet: LuaLibSet;
+
+export interface LuaStateOptions {
+    libraries: LuaLib[];
+}
+
 export class LuaState {
+
+    constructor(options?: LuaStateOptions);
 
     /**
      * Executes a string of code synchronously.

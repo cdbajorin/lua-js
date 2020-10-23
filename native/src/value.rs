@@ -1,16 +1,15 @@
 //! Rust intermediate state between JS and Lua Value types.
+use std::fmt::Formatter;
 
 use crate::error::Error;
+use crate::js_traits::{FromJs, ToJs};
 
-use rlua::prelude::{LuaContext, LuaValue};
+use rlua::prelude::{LuaContext, LuaMultiValue, LuaValue};
 use rlua::{FromLua, ToLua};
 
-use crate::js_traits::{FromJs, ToJs};
-use neon::handle::Handle;
-use neon::prelude::*;
 use neon::result::{NeonResult, Throw};
 use neon::types::{JsArray, JsBoolean, JsNull, JsNumber, JsObject, JsString, JsUndefined, JsValue};
-use std::fmt::Formatter;
+use neon::{context::Context, handle::Handle, object::Object};
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -26,6 +25,19 @@ pub enum Value {
     // k/v pairs, indexed values.
     ObjectLike(Vec<(Value, Value)>, Vec<Value>),
     Error(Error),
+}
+
+impl Value {
+    // TODO this is a hackaround for not implementing FromLuaMulti for Vec<Value>. Naming could be better?
+    pub fn into_vec_for_lua_multi<'lua>(
+        args: LuaMultiValue<'lua>,
+        lua_ctx: LuaContext<'lua>,
+    ) -> rlua::Result<Vec<Value>> {
+        args.into_vec()
+            .into_iter()
+            .map(|lua_v| Value::from_lua(lua_v, lua_ctx))
+            .collect()
+    }
 }
 
 impl<'lua> ToLua<'lua> for Value {
