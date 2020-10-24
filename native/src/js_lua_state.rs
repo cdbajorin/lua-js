@@ -150,10 +150,8 @@ fn register_function<'a>(
                     let js_val = value.to_js(event_ctx).unwrap();
                     arr.set(event_ctx, i as u32, js_val).unwrap();
                 }
-                // TODO is this how we handle passing the error?
-                //  technically, this is an event emitter and not a callback, so it just shouldn't fire
-                //  if there is an error. Not sure how to make it `on` event emitter vs multi-shot callback
-                let args: Vec<Handle<JsValue>> = vec![event_ctx.null().upcast(), arr.upcast()];
+                // TODO How to pass an error via on('error') vs the current setup?
+                let args: Vec<Handle<JsValue>> = vec![arr.upcast()];
                 let _result = callback.call(event_ctx, this, args);
             });
         });

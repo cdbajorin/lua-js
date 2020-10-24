@@ -53,7 +53,7 @@ export class LuaState {
      * @param name
      * @param cb
      */
-    registerFunction<T extends []>(name: string, cb: (args: T) => void): void
+    registerFunction<T extends any[]>(name: string, cb: (args: T) => void): void
 
 
     /**
