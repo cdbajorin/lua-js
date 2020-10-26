@@ -129,11 +129,12 @@ fn do_file_sync(
 fn call_chunk<'a>(
     mut cx: MethodContext<'a, JsLuaState>,
     code: String,
-    js_args: Vec<Handle<'a,JsValue>>,
-) -> JsResult<'a,JsValue> {
+    chunk_name: Option<String>,
+    js_args: Handle<'a, JsArray>,
+) -> JsResult<'a, JsValue> {
     let this = cx.this();
-
     let mut args: Vec<Value> = vec![];
+    let js_args = js_args.to_vec(&mut cx)?;
     for arg in js_args.iter() {
         let value = Value::from_js(*arg, &mut cx)?;
         args.push(value);
@@ -143,13 +144,9 @@ fn call_chunk<'a>(
         let state = this.borrow(&guard);
         &state.lua.clone()
     };
-    match lua_execution::call_chunk(&lua, code, args) {
-        Ok(v) => {
-            v.to_js(&mut cx)
-        }
-        Err(e) => {
-            cx.throw_error(e.to_string())
-        }
+    match lua_execution::call_chunk(&lua, code, chunk_name, args) {
+        Ok(v) => v.to_js(&mut cx),
+        Err(e) => cx.throw_error(e.to_string()),
     }
 }
 
@@ -275,12 +272,22 @@ declare_types! {
 
         method callChunk(mut cx) {
             let code = cx.argument::<JsString>(0)?.value();
-            let mut js_args = vec![];
-            for i in 1..cx.len() {
-                let arg = cx.argument(i)?;
-                js_args.push(arg)
-            }
-            call_chunk(cx, code, js_args)
+            let (chunk_name, args) = match cx.len() {
+                2 => {
+                    let args = cx.argument::<JsArray>(1)?;
+                    Ok((None, args))
+                },
+                3 => {
+                    let chunk_name = cx.argument::<JsString>(1)?.value();
+                    let args = cx.argument::<JsArray>(2)?;
+                    Ok((Some(chunk_name), args))
+                },
+                _ => {
+                    let e = cx.string(format!("expected 2 or 3 arguments. Found: {}", cx.len()));
+                    cx.throw(e)
+                }
+            }?;
+            call_chunk(cx, code, chunk_name, args)
         }
 
         method setGlobal(mut cx) {

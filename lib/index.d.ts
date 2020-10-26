@@ -75,7 +75,8 @@ export class LuaState {
      * @param code
      * @param args
      */
-    callChunk<T extends any[], R>(code: string, ...args: T): R;
+    callChunk<T extends any[], R>(code: string, args: T): R;
+    callChunk<T extends any[], R>(code: string, chunkName: string, args: T): R;
     // /**
     //  * @async
     //  * @name doString
