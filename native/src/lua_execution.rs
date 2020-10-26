@@ -1,7 +1,8 @@
 //! Connection point from lua-js to rlua itself.
 use crate::error::Result;
 use crate::value::Value;
-use rlua::{FromLua, Lua, MultiValue};
+use rlua::{FromLua, Lua, MultiValue, Function, ToLua};
+use rlua::prelude::{LuaValue};
 
 pub fn do_string_sync(lua: &Lua, code: String, chunk_name: Option<String>) -> Result<Value> {
     lua.context(|ctx| {
@@ -15,6 +16,19 @@ pub fn do_string_sync(lua: &Lua, code: String, chunk_name: Option<String>) -> Re
             Err(e) => Err(e.into()),
         }
     })
+}
+
+pub fn call_chunk(lua: &Lua, code: String, args: Vec<Value>) -> Result<Value> {
+    let r = lua.context(|ctx| {
+        let chunk = ctx.load(&code);
+        let f: Function = chunk.eval()?;
+        let lua_args: Vec<LuaValue> = args.into_iter().map(|value| {
+            value.to_lua(ctx)
+        }).collect::<rlua::Result<Vec<LuaValue>>>()?;
+        let r = f.call(MultiValue::from_vec(lua_args))?;
+        Value::from_lua(r, ctx)
+    })?;
+    Ok(r)
 }
 
 pub fn get_global(lua: &Lua, name: String) -> Result<Value> {

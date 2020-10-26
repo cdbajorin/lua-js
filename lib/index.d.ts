@@ -64,8 +64,18 @@ export class LuaState {
      */
     doFileSync(name: string, chunkName?: string): undefined;
 
-    // doFileSync<T extends []>(name: string, chunkName?: string): T;
-
+    /**
+     * Calls a function-like chunk of code:
+     *
+     * ```
+     * state.callChunk('function(a,b) return a + b end', 1, 2) === 3
+     * state.callChunk('tostring', 1) === "1.0"
+     * ```
+     *
+     * @param code
+     * @param args
+     */
+    callChunk<T extends any[], R>(code: string, ...args: T): R;
     // /**
     //  * @async
     //  * @name doString

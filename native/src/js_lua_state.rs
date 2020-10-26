@@ -126,6 +126,33 @@ fn do_file_sync(
     }
 }
 
+fn call_chunk<'a>(
+    mut cx: MethodContext<'a, JsLuaState>,
+    code: String,
+    js_args: Vec<Handle<'a,JsValue>>,
+) -> JsResult<'a,JsValue> {
+    let this = cx.this();
+
+    let mut args: Vec<Value> = vec![];
+    for arg in js_args.iter() {
+        let value = Value::from_js(*arg, &mut cx)?;
+        args.push(value);
+    }
+    let lua: &Lua = {
+        let guard = cx.lock();
+        let state = this.borrow(&guard);
+        &state.lua.clone()
+    };
+    match lua_execution::call_chunk(&lua, code, args) {
+        Ok(v) => {
+            v.to_js(&mut cx)
+        }
+        Err(e) => {
+            cx.throw_error(e.to_string())
+        }
+    }
+}
+
 fn register_function<'a>(
     mut cx: MethodContext<'a, JsLuaState>,
     name: String,
@@ -244,6 +271,16 @@ declare_types! {
                 None => Some(String::from(filename.clone()))
             };
             do_file_sync(cx, filename, chunk_name)
+        }
+
+        method callChunk(mut cx) {
+            let code = cx.argument::<JsString>(0)?.value();
+            let mut js_args = vec![];
+            for i in 1..cx.len() {
+                let arg = cx.argument(i)?;
+                js_args.push(arg)
+            }
+            call_chunk(cx, code, js_args)
         }
 
         method setGlobal(mut cx) {
