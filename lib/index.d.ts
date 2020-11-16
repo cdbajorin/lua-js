@@ -1,31 +1,33 @@
+export const enum Version {
+    Lua54 = "lua54",
+    Lua53 = "lua53",
+    Lua52 = "lua52",
+    Lua51 = "lua51",
+    LuaJIT = "luajit",
+}
+
 export const enum LuaLib {
-    Base = 1,
-    Coroutine = 1 << 1,
-    Table = 1 << 2,
-    Io = 1 << 3,
-    Os = 1 << 4,
-    String = 1 << 5,
-    Utf8 = 1 << 6,
-    Math = 1 << 7,
-    Package = 1 << 8,
-    Debug = 1 << 9,
+    // Lua54/Lua53/Lua52
+    Coroutine = 0x1,
+    Table = 0x2,
+    Io = 0x4,
+    Os = 0x8,
+    String = 0x10,
+    // Lua54/Lua53
+    Utf8 = 0x20,
+    // Lua52/LuaJIT
+    Bit = 0x40,
+    Math = 0x80,
+    Package = 0x100,
+    // LuaJIT
+    Jit = 0x200,
+    // LuaJIT
+    Ffi = 0x40000000,
+    Debug = 0x80000000,
+    All = 0xFFFFFFFF,
+    // Excludes Ffi/Debug
+    AllSafe = 0xFFFFFFFE,
 }
-
-/**
- * Lua library sets to be included when instantiating a new state.
- * Default: `AllNoDebug`
- * The only lib set that includes `debug` is `All`.
- */
-interface LuaLibSet {
-    All: LuaLib[];
-    AllNoDebug: LuaLib[];
-    /**
-     * Excludes io/os/debug
-     */
-    NoFs: LuaLib[];
-}
-
-export const LuaLibSet: LuaLibSet;
 
 export interface LuaStateOptions {
     libraries: LuaLib[];

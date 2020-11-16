@@ -1,11 +1,9 @@
 //! Rust intermediate state between JS and Lua Value types.
 use std::fmt::Formatter;
 
-use crate::error::Error;
 use crate::js_traits::{FromJs, ToJs};
 
-use rlua::prelude::{LuaContext, LuaMultiValue, LuaValue};
-use rlua::{FromLua, ToLua};
+use mlua::prelude::{FromLua, Lua, LuaMultiValue, LuaValue, ToLua};
 
 use neon::result::{NeonResult, Throw};
 use neon::types::{JsArray, JsBoolean, JsNull, JsNumber, JsObject, JsString, JsUndefined, JsValue};
@@ -22,26 +20,26 @@ pub enum Value {
     // Lua has int/float. We'll treat both with Number.
     Number(f64),
     Array(Vec<Value>),
-    // k/v pairs, indexed values.
+    // (k/v pairs, numerically indexed values)
     ObjectLike(Vec<(Value, Value)>, Vec<Value>),
-    Error(Error),
+    Error(String),
 }
 
 impl Value {
     // TODO this is a hackaround for not implementing FromLuaMulti for Vec<Value>. Naming could be better?
     pub fn into_vec_for_lua_multi<'lua>(
         args: LuaMultiValue<'lua>,
-        lua_ctx: LuaContext<'lua>,
-    ) -> rlua::Result<Vec<Value>> {
+        lua: &'lua Lua,
+    ) -> mlua::Result<Vec<Value>> {
         args.into_vec()
             .into_iter()
-            .map(|lua_v| Value::from_lua(lua_v, lua_ctx))
+            .map(|lua_v| Value::from_lua(lua_v, lua))
             .collect()
     }
 }
 
 impl<'lua> ToLua<'lua> for Value {
-    fn to_lua(self, lua: LuaContext<'lua>) -> rlua::Result<LuaValue<'lua>> {
+    fn to_lua(self, lua: &'lua Lua) -> mlua::Result<LuaValue<'lua>> {
         match self {
             Value::String(s) => {
                 let lua_str = lua.create_string(s.as_bytes())?;
@@ -66,7 +64,7 @@ impl<'lua> ToLua<'lua> for Value {
 }
 
 impl<'lua> FromLua<'lua> for Value {
-    fn from_lua(lua_value: LuaValue<'lua>, lua: LuaContext<'lua>) -> rlua::Result<Self> {
+    fn from_lua(lua_value: LuaValue<'lua>, lua: &'lua Lua) -> mlua::Result<Self> {
         match lua_value {
             LuaValue::Nil => Ok(Value::Null),
             LuaValue::Boolean(b) => Ok(Value::Boolean(b)),
@@ -137,7 +135,7 @@ impl<'lua> FromLua<'lua> for Value {
             LuaValue::LightUserData(_) => unimplemented!("LightUserData"),
             LuaValue::Error(e) => {
                 // TODO what to do with error values instead of calls?
-                Ok(Value::Error(Error::Lua(e)))
+                Ok(Value::Error(e.to_string()))
             }
         }
     }

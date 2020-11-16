@@ -5,12 +5,28 @@ use crate::js_traits::{FromJs, ToJs};
 use crate::lua_execution;
 use crate::value::Value;
 
+use mlua::{Lua, StdLib};
 use neon::context::Context;
 use neon::handle::Handle;
 use neon::prelude::*;
-use rlua::{Lua, StdLib};
 
 use neon::declare_types;
+
+fn lua_version() -> &'static str {
+    if cfg!(feature = "lua54") {
+        "lua54"
+    } else if cfg!(feature = "lua53") {
+        "lua53"
+    } else if cfg!(feature = "lua52") {
+        "lua52"
+    } else if cfg!(feature = "lua51") {
+        "lua51"
+    } else if cfg!(feature = "luajit") {
+        "luajit"
+    } else {
+        panic!("No version specified")
+    }
+}
 
 /// LuaState Class wrapper. Holds on to the lua context reference,
 /// as well as the set of active lua libraries, and (eventually) the registered functions
@@ -21,7 +37,7 @@ pub struct LuaState {
 
 impl LuaState {
     fn reset(&mut self) -> () {
-        // By creating a new lua state, we remove all references allowing the program
+        // By creating a new lua state, we remove all references allowing the js runtime
         // to exit if we've attached any event emitters. Without this, the program won't
         // close. Is there a more explicit way to close event listeners, or is relying on
         // the GC a normal/reasonable approach?
@@ -33,9 +49,58 @@ impl LuaState {
 impl Default for LuaState {
     fn default() -> Self {
         LuaState {
-            libraries: StdLib::ALL_NO_DEBUG,
-            lua: Arc::new(Lua::new_with(StdLib::ALL_NO_DEBUG)),
+            libraries: StdLib::ALL_SAFE,
+            lua: Arc::new(Lua::new_with(StdLib::ALL_SAFE).unwrap()),
         }
+    }
+}
+
+fn flag_into_std_lib(flag: u32) -> Option<StdLib> {
+    const ALL_SAFE: u32 = u32::MAX - 1;
+    match flag {
+        #[cfg(any(feature = "lua54", feature = "lua53", feature = "lua52"))]
+        0x1 => Some(StdLib::COROUTINE),
+        0x2 => Some(StdLib::TABLE),
+        0x4 => Some(StdLib::IO),
+        0x8 => Some(StdLib::OS),
+        0x10 => Some(StdLib::STRING),
+        #[cfg(any(feature = "lua54", feature = "lua53"))]
+        0x20 => Some(StdLib::UTF8),
+        #[cfg(any(feature = "lua52", feature = "luajit"))]
+        0x40 => Some(StdLib::BIT),
+        0x80 => Some(StdLib::MATH),
+        0x100 => Some(StdLib::PACKAGE),
+        #[cfg(any(feature = "luajit"))]
+        0x200 => Some(StdLib::JIT),
+        #[cfg(any(feature = "luajit"))]
+        0x4000_0000 => Some(StdLib::FFI),
+        0x8000_0000 => Some(StdLib::DEBUG),
+        u32::MAX => Some(StdLib::ALL),
+        ALL_SAFE => Some(StdLib::ALL_SAFE),
+        _ => None,
+    }
+}
+
+/// These correspond to our JS Enum. Used for a clearer error notification when including them in
+/// incompatible versions.
+fn flag_to_string(flag: u32) -> String {
+    const ALL_SAFE: u32 = u32::MAX - 1;
+    match flag {
+        0x1 => String::from("Coroutine"),
+        0x2 => String::from("Table"),
+        0x4 => String::from("Io"),
+        0x8 => String::from("Os"),
+        0x10 => String::from("String"),
+        0x20 => String::from("Utf8"),
+        0x40 => String::from("Bit"),
+        0x80 => String::from("Math"),
+        0x100 => String::from("Package"),
+        0x200 => String::from("Jit"),
+        0x4000_0000 => String::from("Ffi"),
+        0x8000_0000 => String::from("Debug"),
+        u32::MAX => String::from("All"),
+        ALL_SAFE => String::from("AllSafe"),
+        _ => flag.to_string(),
     }
 }
 
@@ -43,36 +108,33 @@ fn build_libraries_option(
     mut cx: CallContext<JsUndefined>,
     libs: Handle<JsValue>,
 ) -> NeonResult<StdLib> {
-    // flag_set is for throwing errors to notify the user of a bad bitflag set.
-    let (flags, flag_set) = if libs.is_a::<JsArray>() {
-        let libflags = libs
+    if libs.is_a::<JsArray>() {
+        let libflags: Vec<Handle<JsValue>> = libs
             .downcast_or_throw::<JsArray, CallContext<JsUndefined>>(&mut cx)?
             .to_vec(&mut cx)?;
 
-        let mut flag_count: u32 = 0;
-        let mut flag_set: Vec<String> = vec![];
+        // Hack to get a StdLib(0)
+        let mut libset = StdLib::COROUTINE ^ StdLib::COROUTINE;
         for value in libflags.into_iter() {
             let flag = value
                 .downcast_or_throw::<JsNumber, CallContext<JsUndefined>>(&mut cx)?
                 .value() as u32;
-            flag_count += flag;
-            let flag_str = format!("{}", flag);
-            flag_set.push(flag_str);
+
+            if let Some(lib) = flag_into_std_lib(flag) {
+                libset |= lib;
+            } else {
+                return cx.throw_error(format!(
+                    "unrecognized Library flag \"{}\" for {}",
+                    flag_to_string(flag),
+                    lua_version()
+                ));
+            }
         }
-        (flag_count, flag_set)
+        Ok(libset)
+    } else if libs.is_a::<JsUndefined>() {
+        Ok(StdLib::ALL_SAFE)
     } else {
-        (0 as u32, vec![])
-    };
-    match StdLib::from_bits(flags) {
-        None => {
-            let flag_set_str = flag_set.join(", ");
-            let throw_msg = cx.string(format!(
-                "Cannot find libraries associated with bitflag set [{}]",
-                flag_set_str
-            ));
-            cx.throw(throw_msg)
-        }
-        Some(v) => Ok(v),
+        cx.throw_error("Expected 'libraries' to be an an array")
     }
 }
 

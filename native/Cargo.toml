@@ -11,13 +11,21 @@ exclude = ["artifacts.json", "index.node"]
 name = "lua_js"
 crate-type = ["cdylib"]
 
+[features]
+lua54 = ["mlua/vendored", "mlua/lua54"]
+lua53 = ["mlua/vendored", "mlua/lua53"]
+lua52 = ["mlua/vendored", "mlua/lua52"]
+lua51 = ["mlua/vendored", "mlua/lua51"]
+luajit = ["mlua/vendored", "mlua/luajit"]
+default = ["lua53"]
+
 [build-dependencies]
-neon-build = "0.5.0"
+neon-build = "0.5.1"
 
 [dependencies]
-rlua = "0.17.0"
+mlua = "0.4.2"
 
 [dependencies.neon]
-version = "0.5.0"
+version = "0.5.1"
 default-features = false
 features = ["default-panic-hook", "legacy-runtime", "try-catch-api", "event-handler-api"]

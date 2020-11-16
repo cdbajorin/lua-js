@@ -7,10 +7,10 @@
   "author": "Chris Bajorin <chris@chrisbajorin.com>",
   "license": "MIT",
   "dependencies": {
-    "neon-cli": "^0.5.0"
+    "neon-cli": "^0.5.1"
   },
   "scripts": {
-    "start": "npm install && node ./lib/index.js",
-    "install": "neon build"
+    "start": "neon build && node ./lib/index.js",
+    "install": "neon build --release"
   }
 }

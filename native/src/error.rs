@@ -1,14 +1,11 @@
-use rlua::prelude::LuaError;
+use mlua::prelude::LuaError;
+use neon::result::Throw;
 use std::fmt::Formatter;
 
 #[derive(Debug, Clone)]
 pub enum Error {
-    // We're passing as a string because Send is required by
-    // Task, and JsValue doesn't implement it. Is an IR error even necessary?
-    // Js(String),
-    Lua(LuaError),
-    // where exactly can this happen, or is it a fallback?
-    // Internal(String)
+    Js(String),
+    Lua(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -16,25 +13,20 @@ pub type Result<T> = std::result::Result<T, Error>;
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::Lua(e) => write!(f, "{}", e.to_string()),
+            Error::Lua(e) => write!(f, "{}", e),
+            Error::Js(e) => write!(f, "{}", e),
         }
     }
 }
 
-impl std::error::Error for Error {
-    // TODO implement source, or just rely on error enum instead of struct?
-}
-
 impl From<LuaError> for Error {
     fn from(err: LuaError) -> Self {
-        Error::Lua(err)
+        Error::Lua(err.to_string())
     }
 }
 
-// TODO figure out how to use errors with Task, so we can pass errors to both
-//  callbacks as well as throw
-// impl From<JsError> for Error {
-//     fn from(err: JsError) -> Self {
-//         Error::Js(err.to_string())
-//     }
-// }
+impl From<Throw> for Error {
+    fn from(err: Throw) -> Self {
+        Error::Js(format!("{}", err))
+    }
+}
