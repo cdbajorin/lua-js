@@ -1,41 +1,94 @@
-export const enum Version {
-    Lua54 = "lua54",
-    Lua53 = "lua53",
-    Lua52 = "lua52",
-    Lua51 = "lua51",
-    LuaJIT = "luajit",
+interface SharedLibs {
+    table: 0x2,
+    io: 0x4,
+    os: 0x8,
+    string: 0x10,
+    math: 0x80,
+    package: 0x100,
+    debug: 0x80000000,
+    ALL: 0xFFFFFFFF,
+    // Excludes debug and ffi
+    ALL_SAFE: 0xFFFFFFFE,
 }
 
-export const enum LuaLib {
-    // Lua54/Lua53/Lua52
-    Coroutine = 0x1,
-    Table = 0x2,
-    Io = 0x4,
-    Os = 0x8,
-    String = 0x10,
-    // Lua54/Lua53
-    Utf8 = 0x20,
-    // Lua52/LuaJIT
-    Bit = 0x40,
-    Math = 0x80,
-    Package = 0x100,
-    // LuaJIT
-    Jit = 0x200,
-    // LuaJIT
-    Ffi = 0x40000000,
-    Debug = 0x80000000,
-    All = 0xFFFFFFFF,
-    // Excludes Ffi/Debug
-    AllSafe = 0xFFFFFFFE,
+interface CoroutineLib {
+    coroutine: 0x1;
 }
 
-export interface LuaStateOptions {
-    libraries: LuaLib[];
+interface Utf8Lib {
+    utf8: 0x20;
 }
+
+interface BitLib {
+    bit: 0x40;
+}
+
+interface JitLib {
+    jit: 0x200;
+    ffi: 0x40000000,
+}
+
+interface Lua51Libs extends SharedLibs {
+}
+
+interface Lua52Libs extends SharedLibs, CoroutineLib, BitLib {
+}
+
+interface Lua53Libs extends SharedLibs, CoroutineLib, Utf8Lib {
+}
+
+interface Lua54Libs extends Lua53Libs {
+}
+
+interface LuaJitLibs extends SharedLibs, BitLib, JitLib {
+}
+
+interface Lua51 {
+    Version: "lua51",
+    Libs: Lua51Libs
+}
+
+interface Lua52 {
+    Version: "lua52",
+    Libs: Lua52Libs
+}
+
+interface Lua53 {
+    Version: "lua53",
+    Libs: Lua53Libs
+}
+
+interface Lua54 {
+    Version: "lua54",
+    Libs: Lua54Libs
+}
+
+interface LuaJit {
+    Version: "luajit",
+    Libs: LuaJitLibs
+}
+
+type Values<K> = (K[keyof K])[]
+
+type LuaStateOptions =
+    | { version: "lua51"; libraries?: Values<Lua51Libs>; }
+    | { version: "lua52"; libraries?: Values<Lua52Libs>; }
+    | { version: "lua53"; libraries?: Values<Lua53Libs>; }
+    | { version: "lua54"; libraries?: Values<Lua54Libs>; }
+    | { version: "luajit"; libraries?: Values<LuaJitLibs>; }
+
+/**
+ * If `libraries` field is excluded, it defaults to `ALL_SAFE`
+ */
+export function createLuaState(options: LuaStateOptions): LuaState;
+
+export const Lua51: Lua51;
+export const Lua52: Lua52;
+export const Lua53: Lua53;
+export const Lua54: Lua54;
+export const LuaJIT: LuaJit;
 
 export class LuaState {
-
-    constructor(options?: LuaStateOptions);
 
     /**
      * Executes a string of code synchronously.
@@ -79,6 +132,7 @@ export class LuaState {
      */
     callChunk<T extends any[], R>(code: string, args: T): R;
     callChunk<T extends any[], R>(code: string, chunkName: string, args: T): R;
+
     // /**
     //  * @async
     //  * @name doString
@@ -118,7 +172,7 @@ export class LuaState {
      * @param name {string}
      * @returns {T}
      */
-    getGlobal<T>(name: string): T | undefined;
+    getGlobal<T>(name: string): T;
 
     /**
      * This is a mutable reset. It closes the internal Lua context, spawning a

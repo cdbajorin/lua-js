@@ -1,8 +1,7 @@
 native/target
-native/index.node
 native/artifacts.json
+native/*.node
 **/*~
 **/node_modules
 **/.DS_Store
 **/.idea
-lib/*.lua

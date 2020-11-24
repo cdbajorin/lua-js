@@ -6,11 +6,16 @@
   "types": "lib/index.d.ts",
   "author": "Chris Bajorin <chris@chrisbajorin.com>",
   "license": "MIT",
-  "dependencies": {
-    "neon-cli": "^0.5.1"
-  },
   "scripts": {
-    "start": "neon build && node ./lib/index.js",
-    "install": "neon build --release"
+    "test": "tsc && npm install && node ./lib/index.js",
+    "install": "node ./build --release"
+  },
+  "dependencies": {
+    "rimraf": "^3.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^12.19.4",
+    "@types/rimraf": "^3.0.0",
+    "typescript": "^4.0.5"
   }
 }

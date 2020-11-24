@@ -12,7 +12,7 @@ use neon::{context::Context, handle::Handle, object::Object};
 #[derive(Debug, Clone)]
 pub enum Value {
     // This lets us choose what our JS output is.
-    // Both convert to nil on the Lua side
+    // Both Null and Undefined convert to nil on the Lua side
     Null,
     Undefined,
     Boolean(bool),
@@ -129,8 +129,12 @@ impl<'lua> FromLua<'lua> for Value {
                 }
                 Ok(Value::ObjectLike(kv_pairs, indexed_values))
             }
-            LuaValue::Function(_) => unimplemented!("Function"),
-            LuaValue::Thread(_) => unimplemented!("Thread"),
+            LuaValue::Function(_) => {
+                Ok(Value::String("[LuaFunction]".to_string()))
+            },
+            LuaValue::Thread(_) => {
+                Ok(Value::String("[LuaThread]".to_string()))
+            },
             LuaValue::UserData(_) => unimplemented!("UserData"),
             LuaValue::LightUserData(_) => unimplemented!("LightUserData"),
             LuaValue::Error(e) => {

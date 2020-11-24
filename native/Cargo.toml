@@ -1,31 +1,9 @@
-[package]
-name = "lua-js"
-version = "0.1.0"
-authors = ["Chris Bajorin <chris@chrisbajorin.com>"]
-license = "MIT"
-build = "build.rs"
-edition = "2018"
-exclude = ["artifacts.json", "index.node"]
-
-[lib]
-name = "lua_js"
-crate-type = ["cdylib"]
-
-[features]
-lua54 = ["mlua/vendored", "mlua/lua54"]
-lua53 = ["mlua/vendored", "mlua/lua53"]
-lua52 = ["mlua/vendored", "mlua/lua52"]
-lua51 = ["mlua/vendored", "mlua/lua51"]
-luajit = ["mlua/vendored", "mlua/luajit"]
-default = ["lua53"]
-
-[build-dependencies]
-neon-build = "0.5.1"
-
-[dependencies]
-mlua = "0.4.2"
-
-[dependencies.neon]
-version = "0.5.1"
-default-features = false
-features = ["default-panic-hook", "legacy-runtime", "try-catch-api", "event-handler-api"]
+[workspace]
+members = [
+    "common",
+    "lua54",
+    "lua53",
+    "lua52",
+    "lua51",
+    "luajit"
+]

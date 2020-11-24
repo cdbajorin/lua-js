@@ -114,7 +114,7 @@ fn build_libraries_option(
             .to_vec(&mut cx)?;
 
         // Hack to get a StdLib(0)
-        let mut libset = StdLib::COROUTINE ^ StdLib::COROUTINE;
+        let mut libset = StdLib::TABLE ^ StdLib::TABLE;
         for value in libflags.into_iter() {
             let flag = value
                 .downcast_or_throw::<JsNumber, CallContext<JsUndefined>>(&mut cx)?

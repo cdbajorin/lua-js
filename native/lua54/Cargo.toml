@@ -1,0 +1,16 @@
+[package]
+name = "lua54"
+version = "0.1.0"
+authors = ["Chris Bajorin <chris@chrisbajorin.com>"]
+edition = "2018"
+build = "build.rs"
+
+[lib]
+name = "lua54"
+crate-type = ["cdylib"]
+
+[build-dependencies]
+neon-build = "0.5.2"
+
+[dependencies]
+common = { path = "../common", features = ["lua54"]}

@@ -1,0 +1,20 @@
+[package]
+name = "common"
+version = "0.1.0"
+authors = ["Chris Bajorin <chris@chrisbajorin.com>"]
+edition = "2018"
+
+[features]
+lua54 = ["mlua/vendored", "mlua/lua54"]
+lua53 = ["mlua/vendored", "mlua/lua53"]
+lua52 = ["mlua/vendored", "mlua/lua52"]
+lua51 = ["mlua/vendored", "mlua/lua51"]
+luajit = ["mlua/vendored", "mlua/luajit"]
+
+[dependencies]
+mlua = "0.4.2"
+
+[dependencies.neon]
+version = "0.5.2"
+default-features = false
+features = ["default-panic-hook", "legacy-runtime", "try-catch-api", "event-handler-api"]
