@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { Project } from "./project";
 
 const project = Project.create(["lua54", "lua53", "lua52", "lua51", "luajit"])

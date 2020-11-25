@@ -15,6 +15,6 @@ luajit = ["mlua/vendored", "mlua/luajit"]
 mlua = "0.4.2"
 
 [dependencies.neon]
-version = "0.5.2"
+version = "0.5.3"
 default-features = false
 features = ["default-panic-hook", "legacy-runtime", "try-catch-api", "event-handler-api"]

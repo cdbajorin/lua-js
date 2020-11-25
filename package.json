@@ -6,9 +6,12 @@
   "types": "lib/index.d.ts",
   "author": "Chris Bajorin <chris@chrisbajorin.com>",
   "license": "MIT",
+  "bin": {
+    "build-lua-js": "./build/index.js"
+  },
   "scripts": {
-    "test": "tsc && npm install && node ./lib/index.js",
-    "install": "node ./build --release"
+    "test": "tsc && node ./build/index.js && node ./lib/index.js",
+    "install": "build-lua-js --release"
   },
   "dependencies": {
     "rimraf": "^3.0.2"

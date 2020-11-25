@@ -10,7 +10,7 @@ name = "luajit"
 crate-type = ["cdylib"]
 
 [build-dependencies]
-neon-build = "0.5.2"
+neon-build = "0.5.3"
 
 [dependencies]
 common = { path = "../common", features = ["luajit"]}
