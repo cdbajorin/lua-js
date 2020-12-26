@@ -7,10 +7,13 @@ build = "build.rs"
 
 [lib]
 name = "lua51"
+path = "../lib.rs"
 crate-type = ["cdylib"]
 
-[build-dependencies]
-neon-build = "0.5.3"
+[build-dependencies.neon-build]
+version = "0.6.0"
+default-features = false
+
 
 [dependencies]
-common = { path = "../common", features = ["lua51"]}
+core = { path = "../core", features = ["lua51"]}

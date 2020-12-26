@@ -11,6 +11,7 @@
   },
   "scripts": {
     "test": "tsc -p tsconfig.json && node ./build/index.js && ava -v",
+    "build:build": "tsc -p tsconfig.json",
     "install": "build-lua-js --release"
   },
   "dependencies": {
