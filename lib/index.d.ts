@@ -98,8 +98,6 @@ export class LuaState {
      */
     doStringSync(code: string, chunkName?: string): undefined;
 
-    // doStringSync<T extends []>(code: string, chunkName?: string): T;
-
     /**
      * This is more like an event emitter than a callback. It can be invoked
      * multiple times. Event Emitters were more difficult to construct than
@@ -108,7 +106,7 @@ export class LuaState {
      * @param name
      * @param cb
      */
-    registerFunction<T extends any[]>(name: string, cb: (args: T) => void): void
+    registerFunction<T extends any[]>(name: string, cb: (args: T) => void): void;
 
 
     /**

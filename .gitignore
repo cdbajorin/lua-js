@@ -5,3 +5,4 @@ native/*.node
 **/node_modules
 **/.DS_Store
 **/.idea
+tests/**/*.js

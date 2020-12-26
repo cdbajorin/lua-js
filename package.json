@@ -10,7 +10,7 @@
     "build-lua-js": "./build/index.js"
   },
   "scripts": {
-    "test": "tsc && node ./build/index.js && node ./lib/index.js",
+    "test": "tsc -p tsconfig.json && node ./build/index.js && ava -v",
     "install": "build-lua-js --release"
   },
   "dependencies": {
@@ -19,6 +19,16 @@
   "devDependencies": {
     "@types/node": "^12.19.4",
     "@types/rimraf": "^3.0.0",
+    "ava": "^3.13.0",
+    "ts-node": "^9.0.0",
     "typescript": "^4.0.5"
+  },
+  "ava": {
+    "files": [
+      "tests/index.ts",
+      "tests/versions/*.ts"
+    ],
+    "extensions": ["ts"],
+    "require": ["ts-node/register"]
   }
 }

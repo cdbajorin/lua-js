@@ -1,13 +1,12 @@
 //! Rust intermediate state between JS and Lua Value types.
-use std::fmt::Formatter;
-
 use crate::js_traits::{FromJs, ToJs};
-
 use mlua::prelude::{FromLua, Lua, LuaMultiValue, LuaValue, ToLua};
 
-use neon::result::{NeonResult, Throw};
-use neon::types::{JsArray, JsBoolean, JsNull, JsNumber, JsObject, JsString, JsUndefined, JsValue};
+use neon::result::NeonResult;
+use neon::types::{JsBoolean, JsNull, JsNumber, JsObject, JsString, JsUndefined, JsValue, JsFunction};
 use neon::{context::Context, handle::Handle, object::Object};
+
+const JS_MAX_SAFE_INTEGER: i64 = 9007199254740991;
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -17,11 +16,10 @@ pub enum Value {
     Undefined,
     Boolean(bool),
     String(String),
-    // Lua has int/float. We'll treat both with Number.
-    Number(f64),
-    Array(Vec<Value>),
+    Integer(i64),
+    Double(f64),
     // (k/v pairs, numerically indexed values)
-    ObjectLike(Vec<(Value, Value)>, Vec<Value>),
+    ObjectLike(Vec<(Value, Value)>, Vec<(Value, Value)>),
     Error(String),
 }
 
@@ -45,19 +43,25 @@ impl<'lua> ToLua<'lua> for Value {
                 let lua_str = lua.create_string(s.as_bytes())?;
                 Ok(LuaValue::String(lua_str))
             }
-            Value::Number(f) => Ok(LuaValue::Number(f)),
+            Value::Integer(i) => Ok(LuaValue::Integer(i)),
+            Value::Double(f) => Ok(LuaValue::Number(f)),
             Value::Undefined | Value::Null => Ok(LuaValue::Nil),
             Value::Boolean(b) => Ok(LuaValue::Boolean(b)),
-            Value::Array(values) => {
+            Value::Error(_err) => unimplemented!("ToLua for Error"),
+            Value::ObjectLike(kv_pairs, array_like) => {
                 let table = lua.create_table()?;
-                for (i, v) in values.into_iter().enumerate() {
-                    table.raw_set(i, v)?;
+                for (i,v) in array_like.into_iter() {
+                    // TODO consolidate flow through one of these.
+                    if let Value::Double(idx) = i {
+                        table.raw_set(idx+1.0, v)?;
+                    } else if let Value::Integer(idx) = i {
+                        table.raw_set(idx+1, v)?;
+                    }
+                }
+                for (k, v) in kv_pairs.into_iter() {
+                    table.raw_set(k, v)?;
                 }
                 Ok(LuaValue::Table(table))
-            }
-            Value::Error(_err) => unimplemented!("ToLua for Error"),
-            Value::ObjectLike(_kv_pairs, _array_like) => {
-                unimplemented!("ToLua for ObjectLike");
             }
         }
     }
@@ -68,33 +72,34 @@ impl<'lua> FromLua<'lua> for Value {
         match lua_value {
             LuaValue::Nil => Ok(Value::Null),
             LuaValue::Boolean(b) => Ok(Value::Boolean(b)),
-            LuaValue::Integer(i) => Ok(Value::Number(i as f64)),
-            LuaValue::Number(f) => Ok(Value::Number(f)),
+            LuaValue::Integer(i) => {
+                let int = i as i64;
+                if int > JS_MAX_SAFE_INTEGER || int < -JS_MAX_SAFE_INTEGER {
+                    Ok(Value::Integer(i as i64))
+                } else {
+                    Ok(Value::Double(i as f64))
+                }
+            },
+            LuaValue::Number(f) => Ok(Value::Double(f)),
             LuaValue::String(s) => {
                 let s = s.to_str()?;
                 Ok(Value::String(s.to_owned()))
             }
             LuaValue::Table(table) => {
                 // We're simulating an object/array similar to how Lua implements it.
-                // At the moment, even though Lua states iteration order isn't guaranteed,
-                // I haven't bumped into a situation yet where it's an issue.
-                let mut kv_pairs: Vec<(Value, Value)> = vec![];
-                let len = table.len()?;
-                let mut indexed_values: Vec<Value> = Vec::with_capacity(len as usize);
+                // we're using raw_len to avoid re-sizng the vec. I don't know if this is actually
+                // an optimization, though.
+                let len = table.raw_len();
+                let mut kv_pairs: Vec<(Value, Value)> = Vec::with_capacity(len as usize);
+                let mut indexed_values: Vec<(Value, Value)> = Vec::with_capacity(len as usize);
 
                 for pair in table.pairs() {
                     let (key, value) = pair?;
                     let value_v = Value::from_lua(value, lua)?;
                     match key {
                         LuaValue::Integer(n) => {
-                            let k_n = (n - 1) as usize;
-                            // Sparse-ish vec representing the array-like segment.
-                            // If we haven't filled it yet, we're filling with nulls.
-                            // Not sure if there's a better way to implement this?
-                            while indexed_values.len() < k_n {
-                                indexed_values.push(Value::Undefined);
-                            }
-                            indexed_values.insert(k_n, value_v);
+                            let idx = n-1;
+                            indexed_values.push((Value::Integer(idx), value_v))
                         }
                         LuaValue::Number(f) => {
                             // floats are converted to strings, as that's the only representation
@@ -106,27 +111,18 @@ impl<'lua> FromLua<'lua> for Value {
                             let string = s.to_str()?.to_owned();
                             kv_pairs.push((Value::String(string), value_v));
                         }
-                        // Of course, there is no display for these...
-                        LuaValue::Table(_) => panic!("Cannot convert Lua `table` to JS object key"),
-                        LuaValue::Function(_) => {
-                            panic!("Cannot convert Lua `function` to JS object key")
+                        // This handles all other cases where the property key is not representable
+                        // in JS. TODO config option to ignore/drop/convert to symbol?
+                        k @ _ => {
+                            let err = mlua::Error::FromLuaConversionError {
+                                from: &k.type_name(),
+                                to: "JS Object PropertyKey",
+                                message: None
+                            };
+                            return Err(err);
                         }
-                        LuaValue::Thread(_) => {
-                            panic!("Cannot convert Lua `thread` to JS object key")
-                        }
-                        LuaValue::Nil => panic!("Cannot convert Lua `nil` to JS object key"),
-                        LuaValue::Boolean(_) => {
-                            panic!("Cannot convert Lua `boolean` to JS object key")
-                        }
-                        LuaValue::LightUserData(_) => {
-                            panic!("Cannot convert Lua `userData` to JS object key")
-                        }
-                        LuaValue::UserData(_) => {
-                            panic!("Cannot convert Lua `userData` to JS object key")
-                        }
-                        LuaValue::Error(_) => panic!("Cannot convert Lua `error` to JS object key"),
                     };
-                }
+                };
                 Ok(Value::ObjectLike(kv_pairs, indexed_values))
             }
             LuaValue::Function(_) => {
@@ -149,19 +145,19 @@ impl ToJs for Value {
     fn to_js<'a, CX: Context<'a>>(&self, cx: &mut CX) -> neon::result::JsResult<'a, JsValue> {
         match self {
             Value::String(s) => Ok(cx.string(s).upcast()),
-            Value::Number(f) => Ok(cx.number(*f).upcast()),
+            Value::Integer(int) => {
+                let global = cx.global();
+                let bigint_ctor = global.get(cx, "BigInt")?.downcast_or_throw::<JsFunction,_>(cx)?;
+                let args = vec![cx.string(int.to_string())];
+                let null = cx.null();
+                let val = bigint_ctor.call(cx, null, args)?;
+                Ok(val)
+            },
+            Value::Double(f) => Ok(cx.number(*f).upcast()),
             Value::Error(e) => cx.throw_error(e.to_string()),
             Value::Null => Ok(cx.null().upcast()),
             Value::Undefined => Ok(cx.undefined().upcast()),
             Value::Boolean(b) => Ok(cx.boolean(*b).upcast()),
-            Value::Array(values) => {
-                let array = cx.empty_array();
-                for (i, v) in values.into_iter().enumerate() {
-                    let value_handle = v.to_js(cx)?;
-                    array.set(cx, i as u32, value_handle)?;
-                }
-                Ok(array.upcast())
-            }
             Value::ObjectLike(pairs, array_like) => {
                 // let obj = cx.empty_object();
                 let obj: Handle<JsObject> = if array_like.len() > 0 {
@@ -170,9 +166,14 @@ impl ToJs for Value {
                     cx.empty_object().downcast_or_throw::<JsObject, CX>(cx)?
                 };
 
-                for (idx, val) in array_like.into_iter().enumerate() {
+                for (idx, val) in array_like.into_iter() {
+                    // TODO standardize treatment of keys.
                     let js_val = val.to_js(cx)?;
-                    obj.set(cx, idx as u32, js_val)?;
+                    if let Value::Double(idx) = *idx {
+                        obj.set(cx, idx as u32, js_val)?;
+                    } else if let Value::Integer(idx) = *idx {
+                        obj.set(cx, idx as u32, js_val)?;
+                    }
                 }
 
                 for (key, value) in pairs {
@@ -192,32 +193,53 @@ impl FromJs for Value {
             Ok(Value::Null)
         } else if handle.is_a::<JsNumber>() {
             let num = handle.downcast_or_throw::<JsNumber, CX>(cx)?.value();
-            Ok(Value::Number(num))
+            Ok(Value::Double(num))
         } else if handle.is_a::<JsString>() {
             let s = handle.downcast_or_throw::<JsString, CX>(cx)?.value();
             Ok(Value::String(s))
         } else if handle.is_a::<JsBoolean>() {
             let b = handle.downcast_or_throw::<JsBoolean, CX>(cx)?.value();
             Ok(Value::Boolean(b))
-        } else if handle.is_a::<JsArray>() {
-            let arr = handle.downcast_or_throw::<JsArray, CX>(cx)?;
-            let values: Vec<Value> = arr
-                .to_vec(cx)?
-                .into_iter()
-                .map(|v| Value::from_js(v, cx))
-                .collect::<NeonResult<Vec<Value>>>()?;
-            Ok(Value::Array(values))
         } else if handle.is_a::<JsObject>() {
-            unimplemented!("JsObject to Lua");
-        } else {
-            Err(Throw)
-        }
-    }
-}
 
-// TODO Display for Value
-impl std::fmt::Display for Value {
-    fn fmt(&self, _f: &mut Formatter<'_>) -> std::fmt::Result {
-        unimplemented!("Display for Value");
+            if handle.is_a::<JsFunction>() {
+                // TODO This should likely be an error. We want to direct the user towards
+                //  using register_function/on("functionName") depending on sync/async.
+                unimplemented!("JsFunction to Lua")
+            } else {
+                // JS Objects are lua-like, in that arrays can have object properties. If you set a
+                // property using an integer, it will be treated as number like. x[1.5] will be coerced
+                // to a string. So we can check for string/number/symbol and decide what do with it.
+                let obj = handle.downcast_or_throw::<JsObject, CX>(cx)?;
+                let props = obj.get_own_property_names(cx)?.to_vec(cx)?;
+
+                // Don't know what's what, so we're just sizing each piece to the max we'd need
+                let mut hash_like: Vec<(Value, Value)> = Vec::with_capacity(props.len() + 1);
+                let mut array_like: Vec<(Value, Value)> = Vec::with_capacity(props.len() + 1);
+
+                for key_handle in props {
+
+                    if key_handle.is_a::<JsNumber>() {
+                        // We can cast to usize because any property key set as a float will be cast
+                        // to a string by the JS runtime.
+                        let key = Value::from_js(key_handle, cx)?;
+                        let value_handle = obj.get(cx, key_handle)?;
+                        let value = Value::from_js(value_handle, cx)?;
+                        array_like.push((key, value))
+                    } else if key_handle.is_a::<JsString>() {
+                        let key = Value::from_js(key_handle, cx)?;
+                        let value_handle = obj.get(cx, key_handle)?;
+                        let value = Value::from_js(value_handle, cx)?;
+                        hash_like.push((key, value))
+                    } else {
+                        unimplemented!("JsSymbol Property Key")
+                    }
+                }
+                Ok(Value::ObjectLike(hash_like, array_like))
+            }
+        } else {
+            // TODO what should be happening here? returrning Err(Throw) is converted to nil instead of actually erroring out.
+            panic!("Cannot convert JsValue from JS")
+        }
     }
 }
