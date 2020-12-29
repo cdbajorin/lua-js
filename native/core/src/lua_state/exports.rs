@@ -2,11 +2,11 @@ use std::cell::RefCell;
 use std::fs;
 
 use crate::lua_state::native::LuaState;
-use crate::value::Value;
 use crate::meta;
+use crate::value::Value;
 
+use mlua::StdLib;
 use neon::prelude::*;
-use mlua::{StdLib};
 
 /// Container type that we pass back and forth to the JS runtime.
 pub type JsLuaState = JsBox<RefCell<LuaState>>;
@@ -53,9 +53,9 @@ pub fn luastate_do_file_sync(mut cx: FunctionContext) -> JsResult<JsValue> {
         // TODO trim filepath for passing in as name
         Ok(code) => match luastate.do_string_sync(code, filepath) {
             Ok(v) => v.to_js(&mut cx),
-            Err(e) => cx.throw_error(e.to_string())
+            Err(e) => cx.throw_error(e.to_string()),
         },
-        Err(e) => cx.throw_error(e.to_string())
+        Err(e) => cx.throw_error(e.to_string()),
     }
 }
 

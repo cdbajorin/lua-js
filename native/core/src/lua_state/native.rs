@@ -1,15 +1,13 @@
-use crate::value::Value;
 use crate::error::Result;
+use crate::value::Value;
 
-use mlua::{Lua, StdLib, FromLua};
-use neon::prelude::{Finalize};
-
+use mlua::{FromLua, Lua, StdLib};
+use neon::prelude::Finalize;
 
 pub struct LuaState {
     lua: Lua,
-    libraries: StdLib
+    libraries: StdLib,
 }
-
 
 fn stdlib_contains_unsafe(libs: StdLib) -> bool {
     #[cfg(feature = "luajit")]
@@ -20,7 +18,6 @@ fn stdlib_contains_unsafe(libs: StdLib) -> bool {
 }
 
 impl LuaState {
-
     fn init_lua_from_library(libraries: StdLib) -> Lua {
         // Lua internals has some error protection around passing binary into lua load()
         // it keeps a `safe` flag internally, so we're utilizing its own safety checks by
@@ -40,13 +37,12 @@ impl LuaState {
         LuaState { lua, libraries }
     }
 
-
     pub fn do_string_sync(&self, code: String, name: String) -> Result<Value> {
         let chunk = self.lua.load(&code);
         let chunk = chunk.set_name(&name)?;
         match chunk.call(()) {
             Ok(values) => Ok(Value::lua_multi_into_array(values, &self.lua)?),
-            Err(e) => Err(e.into())
+            Err(e) => Err(e.into()),
         }
     }
 
