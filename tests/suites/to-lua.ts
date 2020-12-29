@@ -1,6 +1,7 @@
 import { Macro, OneOrMoreMacros } from "ava";
 import { Context } from "../index";
 
+// TODO BigInt/Symbol
 export const toLuaNumber: Macro<[], Context> = (t) => {
     const state = t.context.lua;
     state.setGlobal("one", 1);
@@ -27,7 +28,7 @@ export const toLuaNumber: Macro<[], Context> = (t) => {
     };
     t.notThrows(luaAssertMaxNegInt);
 }
-toLuaNumber.title = (version) => `${version}: It converts numbers to Lua`;
+toLuaNumber.title = (version) => `${version}: ToLua: It converts numbers`;
 
 export const toLuaString: Macro<[], Context> = (t) => {
     const state = t.context.lua;
@@ -38,7 +39,7 @@ export const toLuaString: Macro<[], Context> = (t) => {
     };
     t.notThrows(luaAssertString);
 }
-toLuaString.title = (version) => `${version}: It converts strings to Lua`;
+toLuaString.title = (version) => `${version}: ToLua: It converts strings`;
 
 export const toLuaBool: Macro<[], Context> = (t) => {
     const state = t.context.lua;
@@ -56,10 +57,10 @@ export const toLuaBool: Macro<[], Context> = (t) => {
     };
     t.notThrows(luaAssertFalse);
 }
-toLuaBool.title = (version) => `${version}: It converts bools to Lua`;
+toLuaBool.title = (version) => `${version}: ToLua: It converts booleans`;
 
 
-export const toLuaNil: Macro<[], Context> = (t) => {
+export const toLuaNullUndefined: Macro<[], Context> = (t) => {
     const state = t.context.lua;
     const jsUndefined = undefined;
     state.setGlobal("jsUndefined", jsUndefined);
@@ -75,7 +76,7 @@ export const toLuaNil: Macro<[], Context> = (t) => {
     };
     t.notThrows(luaAssertNull);
 }
-toLuaNil.title = (version) => `${version}: It converts undefined/null to Lua`;
+toLuaNullUndefined.title = (version) => `${version}: ToLua: It converts undefined/null`;
 
 
 export const toLuaArray: Macro<[], Context> = (t) => {
@@ -92,10 +93,10 @@ export const toLuaArray: Macro<[], Context> = (t) => {
     };
     t.notThrows(luaAssertArray);
 }
-toLuaArray.title = (version) => `${version}: It converts arrays to Lua`;
+toLuaArray.title = (version) => `${version}: ToLua: It converts arrays`;
 
 // TODO unimplemented
-export const toLuaTable: Macro<[], Context> = (t) => {
+export const toLuaObject: Macro<[], Context> = (t) => {
     const state = t.context.lua;
     const jsObject = {
         a: 1,
@@ -112,25 +113,7 @@ export const toLuaTable: Macro<[], Context> = (t) => {
     };
     t.notThrows(luaAssertArray);
 }
-toLuaTable.title = (version) => `${version}: It converts Objects to Lua`;
-
-export const toLuaTableMixed: Macro<[], Context> = (t) => {
-    const state = t.context.lua;
-    const tableLike: any = [1, 2, 3];
-    tableLike.propA = "abc";
-    tableLike[1.5] = "things";
-    state.setGlobal("tableLike", tableLike);
-    const luaAssertArray = () => {
-        state.doStringSync(`
-        assert(tableLike[1] == 1)
-        assert(tableLike[2] == 2)
-        assert(tableLike[3] == 3)
-        assert(tableLike.propA == "abc")
-        `);
-    };
-    t.notThrows(luaAssertArray);
-}
-toLuaTableMixed.title = (version) => `${version}: It converts arrays with properties to Lua`;
+toLuaObject.title = (version) => `${version}: ToLua: It converts Objects`;
 
 export const toLuaSparseArray: Macro<[], Context> = (t) => {
     const state = t.context.lua;
@@ -144,17 +127,25 @@ export const toLuaSparseArray: Macro<[], Context> = (t) => {
         `);
     };
     t.notThrows(luaAssertArray);
+    const tableLike2: any = [1, undefined, 3];
+    state.setGlobal("tableLike2", tableLike2);
+    const luaAssertArray2 = () => {
+        state.doStringSync(`
+        assert(tableLike2[1] == 1)
+        assert(tableLike2[2] == nil)
+        assert(tableLike2[3] == 3)
+        `);
+    };
+    t.notThrows(luaAssertArray2);
 }
-toLuaSparseArray.title = (version) => `${version}: It converts sparse arrays to Lua`;
+toLuaSparseArray.title = (version) => `${version}: ToLua: It converts sparse arrays`;
 
 export const toLuaSuite: OneOrMoreMacros<[], Context> = [
     toLuaNumber,
     toLuaString,
     toLuaBool,
-    toLuaNil,
+    toLuaNullUndefined,
     toLuaArray,
-    // TODO Lua Tables. Needs some work on mapping keys to indexes/fields
-    toLuaTable,
-    toLuaTableMixed,
+    toLuaObject,
     toLuaSparseArray
 ]

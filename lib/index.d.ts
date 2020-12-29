@@ -88,6 +88,17 @@ export const Lua53: Lua53;
 export const Lua54: Lua54;
 export const LuaJIT: LuaJit;
 
+/**
+ * Collection of symbols used by lua-js
+ */
+export const Symbols: {
+    /**
+     * Representation for using `0` as a property key in Lua:
+     * `{ [0] = "foo" }` will convert to `{ [Symbols.ZeroIndex]: "foo" }`
+     */
+    ZeroIndex: symbol
+}
+
 export class LuaState {
 
     /**
@@ -96,17 +107,17 @@ export class LuaState {
      * @param code
      * @param chunkName
      */
-    doStringSync(code: string, chunkName?: string): undefined;
+    doStringSync<T extends any[]>(code: string, chunkName?: string): T;
 
-    /**
-     * This is more like an event emitter than a callback. It can be invoked
-     * multiple times. Event Emitters were more difficult to construct than
-     * a reusable callback. This may change in the future.
-     *
-     * @param name
-     * @param cb
-     */
-    registerFunction<T extends any[]>(name: string, cb: (args: T) => void): void;
+    // /**
+    //  * This is more like an event emitter than a callback. It can be invoked
+    //  * multiple times. Event Emitters were more difficult to construct than
+    //  * a reusable callback. This may change in the future.
+    //  *
+    //  * @param name
+    //  * @param cb
+    //  */
+    // registerFunction<T extends any[]>(name: string, cb: (args: T) => void): void;
 
 
     /**
@@ -115,21 +126,21 @@ export class LuaState {
      * @param name
      * @param chunkName
      */
-    doFileSync(name: string, chunkName?: string): undefined;
+    doFileSync<T extends any[]>(name: string, chunkName?: string): T;
 
-    /**
-     * Calls a function-like chunk of code:
-     *
-     * ```
-     * state.callChunk('function(a,b) return a + b end', 1, 2) === 3
-     * state.callChunk('tostring', 1) === "1.0"
-     * ```
-     *
-     * @param code
-     * @param args
-     */
-    callChunk<T extends any[], R>(code: string, args: T): R;
-    callChunk<T extends any[], R>(code: string, chunkName: string, args: T): R;
+    // /**
+    //  * Calls a function-like chunk of code:
+    //  *
+    //  * ```
+    //  * lua.callChunk('function(a,b) return a + b end', 1, 2) === 3
+    //  * lua.callChunk('tostring', 1) === "1.0"
+    //  * ```
+    //  *
+    //  * @param code
+    //  * @param args
+    //  */
+    // callChunk<T extends any[], R>(code: string, args: T): R;
+    // callChunk<T extends any[], R>(code: string, chunkName: string, args: T): R;
 
     // /**
     //  * @async

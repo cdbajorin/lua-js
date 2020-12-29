@@ -3,17 +3,17 @@ name = "lua51"
 version = "0.1.0"
 authors = ["Chris Bajorin <chris@chrisbajorin.com>"]
 edition = "2018"
-build = "build.rs"
+build = "../build.rs"
 
 [lib]
 name = "lua51"
 path = "../lib.rs"
 crate-type = ["cdylib"]
 
-[build-dependencies.neon-build]
-version = "0.6.0"
-default-features = false
+[build-dependencies]
+neon-build = "0.6.0"
 
 
 [dependencies]
-core = { path = "../core", features = ["lua51"]}
+core = { path = "../core", features = ["lua51"] }
+neon = { version = "0.6.0", default-features = false, features = ["napi-runtime", "proc-macros"] }

@@ -1,0 +1,10 @@
+#[cfg(feature = "lua54")]
+pub const LUA_VERSION: &'static str = "lua54";
+#[cfg(feature = "lua53")]
+pub const LUA_VERSION: &'static str = "lua53";
+#[cfg(feature = "lua52")]
+pub const LUA_VERSION: &'static str = "lua52";
+#[cfg(feature = "lua51")]
+pub const LUA_VERSION: &'static str = "lua51";
+#[cfg(feature = "luajit")]
+pub const LUA_VERSION: &'static str = "luajit";

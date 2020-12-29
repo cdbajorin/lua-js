@@ -11,10 +11,15 @@ lua52 = ["mlua/vendored", "mlua/lua52"]
 lua51 = ["mlua/vendored", "mlua/lua51"]
 luajit = ["mlua/vendored", "mlua/luajit"]
 
-[dependencies]
-mlua = "0.4.2"
+[dependencies.mlua]
+# TODO there is an unreleased bugfix on dev branch. Whenever >0.4.2 is released, switch to it.
+#version = "0.4.2"
+git = "https://github.com/khvzak/mlua"
+branch = "dev"
+features = ["send"]
 
 [dependencies.neon]
 version = "0.6.0"
 default-features = false
-features = ["default-panic-hook", "legacy-runtime", "try-catch-api", "event-handler-api", "proc-macros"]
+#features = ["default-panic-hook", "napi-runtime", "try-catch-api", "event-handler-api", "proc-macros"]
+features = ["napi-runtime", "proc-macros"]

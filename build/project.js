@@ -20,23 +20,24 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Project = void 0;
-const path = __importStar(require("path"));
+// import * as path from "path";
 const feature_1 = require("./feature");
 const cp = __importStar(require("child_process"));
-const ROOT = path.resolve(__dirname, "..");
+// const ROOT = path.resolve(__dirname, "..");
 const buildTarget = async (crate, release) => {
     return new Promise((resolve, reject) => {
         const cwd = crate.root;
         const flags = ["build"].concat((release ? ["--release"] : []));
         let ps = cp.spawn("cargo", flags, { cwd, stdio: "inherit" });
         ps.on("error", reject);
-        ps.on("close", (num) => {
-            const target = release ? "release" : "debug";
-            // TODO this is OSX-only, refactor for windows/linux support.
-            const dylibName = `lib${crate.name}.dylib`;
-            const dylib = path.resolve(ROOT, "native", "target", target, dylibName);
-            resolve(dylib);
-        });
+        ps.on("close", resolve);
+        // ps.on("close", (num) => {
+        //     const target = release ?  "release" : "debug";
+        //     // TODO this is OSX-only, refactor for windows/linux support.
+        //     const dylibName = `lib${crate.name}.dylib`;
+        //     const dylib = path.resolve(ROOT, "native", "target", target, dylibName);
+        //     resolve(dylib)
+        // });
     });
 };
 class Project {
@@ -52,8 +53,8 @@ class Project {
     }
     async build(release) {
         for (let crate of this.featureCrates) {
-            let dylib = await buildTarget(crate, release);
-            await crate.finish(dylib);
+            await buildTarget(crate, release);
+            // await crate.finish(dylib);
         }
     }
 }

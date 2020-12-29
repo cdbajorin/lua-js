@@ -1,6 +1,6 @@
 native/target
 native/artifacts.json
-native/*.node
+native/**/*.node
 **/*~
 **/node_modules
 **/.DS_Store

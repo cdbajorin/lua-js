@@ -18,28 +18,22 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FeatureCrate = void 0;
 const path = __importStar(require("path"));
-const fs = __importStar(require("fs"));
-const util_1 = require("util");
-const rimraf_1 = __importDefault(require("rimraf"));
-const rimraf = util_1.promisify(rimraf_1.default);
-const copyFile = util_1.promisify(fs.copyFile);
+// import * as fs from "fs";
+// import { promisify } from "util";
+// import _rimraf from "rimraf";
+// const rimraf = promisify(_rimraf);
+// const copyFile = promisify(fs.copyFile);
 const ROOT = path.resolve(__dirname, "..");
 const NATIVE = path.resolve(ROOT, "native");
 class FeatureCrate {
+    // addon: string;
     constructor(name) {
         this.name = name;
         this.root = path.resolve(NATIVE, name);
-        this.addon = path.resolve(NATIVE, `${name}.node`);
-    }
-    async finish(dylib) {
-        await rimraf(this.addon);
-        await copyFile(dylib, this.addon);
+        // this.addon = path.resolve(NATIVE, `${name}.node`);
     }
 }
 exports.FeatureCrate = FeatureCrate;

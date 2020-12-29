@@ -3,7 +3,7 @@ name = "lua52"
 version = "0.1.0"
 authors = ["Chris Bajorin <chris@chrisbajorin.com>"]
 edition = "2018"
-build = "build.rs"
+build = "../build.rs"
 
 [lib]
 name = "lua52"
@@ -15,3 +15,4 @@ neon-build = "0.6.0"
 
 [dependencies]
 core = { path = "../core", features = ["lua52"]}
+neon = { version = "0.6.0", default-features = false, features = ["napi-runtime", "proc-macros"] }

@@ -4,6 +4,7 @@ import { toLuaSuite } from "../suites/to-lua";
 import { createLuaState, Lua54 } from "../../lib";
 import { Context } from "../index";
 import { fromLuaSuite } from "../suites/from-lua";
+import { apiSuite } from "../suites/api";
 
 const test = anyTest as TestInterface<Context>;
 
@@ -22,3 +23,4 @@ afterEach(t => {
  */
 test("lua54", toLuaSuite);
 test("lua54", fromLuaSuite);
+test("lua54", apiSuite);

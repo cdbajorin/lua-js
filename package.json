@@ -11,7 +11,6 @@
   },
   "scripts": {
     "test": "tsc -p tsconfig.json && node ./build/index.js && ava -v",
-    "build:build": "tsc -p tsconfig.json",
     "install": "build-lua-js --release"
   },
   "dependencies": {
@@ -27,7 +26,11 @@
   "ava": {
     "files": [
       "tests/index.ts",
-      "tests/versions/*.ts"
+      "tests/versions/lua51.ts",
+      "tests/versions/lua52.ts",
+      "tests/versions/lua53.ts",
+      "tests/versions/lua54.ts",
+      "tests/versions/luajit.ts"
     ],
     "extensions": ["ts"],
     "require": ["ts-node/register"]
