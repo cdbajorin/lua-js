@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "core",
+    "common",
     "lua54",
     "lua53",
     "lua52",

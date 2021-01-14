@@ -13,7 +13,6 @@ crate-type = ["cdylib"]
 [build-dependencies]
 neon-build = "0.6.0"
 
-
 [dependencies]
-core = { path = "../core", features = ["lua51"] }
+common = { path = "../common", features = ["lua51"] }
 neon = { version = "0.6.0", default-features = false, features = ["napi-runtime", "proc-macros"] }

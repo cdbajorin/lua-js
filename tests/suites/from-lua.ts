@@ -70,7 +70,6 @@ fromLuaSparseArrayTable.title = (version) => `${version}: FromLua: It converts s
 
 export const fromLuaObjectTable: Macro<[], Context> = (t) => {
     const state = t.context.lua;
-    // language=Lua
     state.doStringSync(`
         a = "a"
         myObj = {
@@ -87,7 +86,6 @@ fromLuaObjectTable.title = (version) => `${version}: FromLua: It converts object
 
 export const fromLuaNegativeIndexableKeys: Macro<[], Context> = (t) => {
     const state = t.context.lua;
-    // language=Lua
     state.doStringSync(`
         myObj = {
             [-1] = -1,
@@ -101,7 +99,6 @@ fromLuaNegativeIndexableKeys.title = (version) => `${version}: FromLua: It conve
 
 export const fromLuaIndexableKeys: Macro<[], Context> = (t) => {
     const state = t.context.lua;
-    // language=Lua
     state.doStringSync(`
         myObj = {
             [1] = 1,
@@ -118,7 +115,6 @@ fromLuaIndexableKeys.title = (version) => `${version}: FromLua: it wraps integer
 
 export const fromLuaZeroIndexTable: Macro<[], Context> = (t) => {
     const state = t.context.lua;
-    // language=Lua
     state.doStringSync(`
         myObj = {
             [0] = "LuaJs.0",
@@ -136,7 +132,6 @@ fromLuaZeroIndexTable.title = (version) => `${version}: FromLua: it handles zero
 
 export const fromLuaObjectPropKeyError: Macro<[], Context> = (t) => {
     const state = t.context.lua;
-    // language=Lua
     state.doStringSync(`            
         obj = {
          [{}] = 1
@@ -153,7 +148,6 @@ export const fromLuaPropKeyGTu32Max: Macro<[], Context> = (t) => {
     const U32_MAX = 4294967295;
     const state = t.context.lua;
     // 1-based index conversion means we need to add 2 to force it out of range.
-    // language=Lua
     state.doStringSync(`
         arrLike = {
             [${U32_MAX + 1}] = "MAX"

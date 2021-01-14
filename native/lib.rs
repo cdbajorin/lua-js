@@ -5,7 +5,7 @@
 /// binaries end up with the same symbols, regardless of the
 /// feature flags being passed, and we end up with name clashes
 /// when calling `require()` from node.
-use core::*;
+use common::*;
 use neon::prelude::*;
 
 #[neon::main]

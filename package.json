@@ -13,12 +13,9 @@
     "test": "tsc -p tsconfig.json && node ./build/index.js && ava -v",
     "install": "build-lua-js --release"
   },
-  "dependencies": {
-    "rimraf": "^3.0.2"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/node": "^12.19.4",
-    "@types/rimraf": "^3.0.0",
     "ava": "^3.13.0",
     "ts-node": "^9.0.0",
     "typescript": "^4.0.5"

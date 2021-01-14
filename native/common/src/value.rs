@@ -40,6 +40,7 @@ impl Value {
             .into_iter()
             .enumerate()
             .map(|(idx, lua_v)| -> mlua::Result<(u32, Value)> {
+                // TODO this isn't technically safe. Vararg size isn't limited to u32.
                 Ok((idx as u32, Value::from_lua(lua_v, lua)?))
             })
             .collect::<mlua::Result<Vec<(u32, Value)>>>()?;

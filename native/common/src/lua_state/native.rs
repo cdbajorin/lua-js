@@ -18,7 +18,7 @@ fn stdlib_contains_unsafe(libs: StdLib) -> bool {
 }
 
 impl LuaState {
-    fn init_lua_from_library(libraries: StdLib) -> Lua {
+    fn init_lua_with_libraries(libraries: StdLib) -> Lua {
         // Lua internals has some error protection around passing binary into lua load()
         // it keeps a `safe` flag internally, so we're utilizing its own safety checks by
         // branching on `new_with`.
@@ -33,7 +33,7 @@ impl LuaState {
     }
 
     pub fn new(libraries: StdLib) -> Self {
-        let lua = LuaState::init_lua_from_library(libraries);
+        let lua = LuaState::init_lua_with_libraries(libraries);
         LuaState { lua, libraries }
     }
 
@@ -62,7 +62,7 @@ impl LuaState {
     }
 
     pub fn reset(&mut self) {
-        self.lua = LuaState::init_lua_from_library(self.libraries);
+        self.lua = LuaState::init_lua_with_libraries(self.libraries);
     }
 }
 

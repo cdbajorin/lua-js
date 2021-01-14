@@ -19,10 +19,10 @@ pub fn luastate_constructor(mut cx: FunctionContext) -> JsResult<JsLuaState> {
     if let None = opt_config {
         return Ok(cx.boxed(RefCell::new(LuaState::default())));
     };
-    let options: Handle<JsObject> = opt_config
+    let options = opt_config
         .unwrap()
         .downcast_or_throw::<JsObject, _>(&mut cx)?;
-    let libs: Handle<JsValue> = options.get(&mut cx, "libraries")?;
+    let libs = options.get(&mut cx, "libraries")?;
     let libraries = build_lua_stdlib(&mut cx, libs)?;
     let luastate = LuaState::new(libraries);
     Ok(cx.boxed(RefCell::new(luastate)))
@@ -31,7 +31,7 @@ pub fn luastate_constructor(mut cx: FunctionContext) -> JsResult<JsLuaState> {
 /// LuaState Instance method `doStringSync(code: string, name?: string)`
 /// compile and execute a string of lua code.
 pub fn luastate_do_string_sync(mut cx: FunctionContext) -> JsResult<JsValue> {
-    let luastate: Handle<JsLuaState> = cx.argument::<JsLuaState>(0)?;
+    let luastate = cx.argument::<JsLuaState>(0)?;
     let code = cx.argument::<JsString>(1)?.value(&mut cx);
     let name = cx.argument::<JsString>(2)?.value(&mut cx);
     // TODO I believe using borrow_mut will give us run-time errors on race conditions?
@@ -46,9 +46,9 @@ pub fn luastate_do_string_sync(mut cx: FunctionContext) -> JsResult<JsValue> {
 /// LuaState instance method `doFileSync(filename: string, chunkName?: string)`
 /// Optional chunkName is for error messaging.
 pub fn luastate_do_file_sync(mut cx: FunctionContext) -> JsResult<JsValue> {
-    let luastate: Handle<JsLuaState> = cx.argument::<JsLuaState>(0)?;
+    let luastate = cx.argument::<JsLuaState>(0)?;
     let luastate = luastate.borrow_mut();
-    let filepath: String = cx.argument::<JsString>(1)?.value(&mut cx);
+    let filepath = cx.argument::<JsString>(1)?.value(&mut cx);
     match fs::read_to_string(&filepath) {
         // TODO trim filepath for passing in as name
         Ok(code) => match luastate.do_string_sync(code, filepath) {
@@ -63,7 +63,7 @@ pub fn luastate_do_file_sync(mut cx: FunctionContext) -> JsResult<JsValue> {
 /// restarts the Lua runtime. In the future, this will also clear references held
 /// by LuaState which might prevent the JS Runtime from closing (event emitters).
 pub fn luastate_reset(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    let luastate: Handle<JsLuaState> = cx.argument::<JsLuaState>(0)?;
+    let luastate = cx.argument::<JsLuaState>(0)?;
     let mut luastate = luastate.borrow_mut();
     luastate.reset();
     Ok(cx.undefined())
@@ -71,8 +71,8 @@ pub fn luastate_reset(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 
 /// LuaState instance method `setGlobal(name, value): boolean`
 pub fn luastate_set_global(mut cx: FunctionContext) -> JsResult<JsValue> {
-    let luastate: Handle<JsLuaState> = cx.argument::<JsLuaState>(0)?;
-    let var_name: String = cx.argument::<JsString>(1)?.value(&mut cx);
+    let luastate = cx.argument::<JsLuaState>(0)?;
+    let var_name = cx.argument::<JsString>(1)?.value(&mut cx);
     let value_handle = cx.argument(2)?;
     let value = Value::from_js(value_handle, &mut cx)?;
     let luastate = luastate.borrow_mut();
@@ -85,8 +85,8 @@ pub fn luastate_set_global(mut cx: FunctionContext) -> JsResult<JsValue> {
 
 /// LuaState instance method `getGlobal(name): T`
 pub fn luastate_get_global(mut cx: FunctionContext) -> JsResult<JsValue> {
-    let luastate: Handle<JsLuaState> = cx.argument::<JsLuaState>(0)?;
-    let var_name: String = cx.argument::<JsString>(1)?.value(&mut cx);
+    let luastate = cx.argument::<JsLuaState>(0)?;
+    let var_name = cx.argument::<JsString>(1)?.value(&mut cx);
     let luastate = luastate.borrow_mut();
 
     match luastate.get_global(var_name) {

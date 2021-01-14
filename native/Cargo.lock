@@ -34,7 +34,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
-name = "core"
+name = "common"
 version = "0.1.0"
 dependencies = [
  "mlua",
@@ -76,7 +76,7 @@ dependencies = [
 name = "lua51"
 version = "0.1.0"
 dependencies = [
- "core",
+ "common",
  "neon",
  "neon-build",
 ]
@@ -85,7 +85,7 @@ dependencies = [
 name = "lua52"
 version = "0.1.0"
 dependencies = [
- "core",
+ "common",
  "neon",
  "neon-build",
 ]
@@ -94,7 +94,7 @@ dependencies = [
 name = "lua53"
 version = "0.1.0"
 dependencies = [
- "core",
+ "common",
  "neon",
  "neon-build",
 ]
@@ -103,7 +103,7 @@ dependencies = [
 name = "lua54"
 version = "0.1.0"
 dependencies = [
- "core",
+ "common",
  "neon",
  "neon-build",
 ]
@@ -112,7 +112,7 @@ dependencies = [
 name = "luajit"
 version = "0.1.0"
 dependencies = [
- "core",
+ "common",
  "neon",
  "neon-build",
 ]
@@ -134,8 +134,9 @@ checksum = "3728d817d99e5ac407411fa471ff9800a778d88a24685968b36824eaf4bee400"
 
 [[package]]
 name = "mlua"
-version = "0.4.2"
-source = "git+https://github.com/khvzak/mlua?branch=dev#ce8955f5b9a2e7c1ef8c0fdd11f13057a7f5d213"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a12dc3300f9cb6d319059a5e94f9fcde2ee8dd803f225b92bed17b0c6fb15154"
 dependencies = [
  "bstr",
  "cc",
