@@ -16,6 +16,6 @@ version = "0.5.0"
 features = ["send"]
 
 [dependencies.neon]
-version = "0.6.0"
+version = "0.7.0"
 default-features = false
-features = ["napi-runtime", "proc-macros"]
+features = ["napi-runtime", "proc-macros", "event-queue-api"]

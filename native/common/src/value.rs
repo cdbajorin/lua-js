@@ -30,8 +30,20 @@ pub enum Value {
 }
 
 impl Value {
+    /// Convert LuaMulti into a vec of `Value`s
+    pub fn lua_multi_into_vec<'lua>(args: LuaMultiValue<'lua>, lua: &'lua Lua) -> mlua::Result<Vec<Value>> {
+        args
+            .into_vec()
+            .into_iter()
+            .map(|lua_v| -> mlua::Result<Value> {
+                // TODO this isn't a safe cast. Vararg size isn't limited to u32.
+                Ok(Value::from_lua(lua_v, lua)?)
+            })
+            .collect::<mlua::Result<Vec<Value>>>()
+    }
+
     /// Convert LuaMulti into a value representing an array-like object.
-    pub fn lua_multi_into_array<'lua>(
+    pub fn lua_multi_into_js_array<'lua>(
         args: LuaMultiValue<'lua>,
         lua: &'lua Lua,
     ) -> mlua::Result<Value> {
@@ -40,7 +52,7 @@ impl Value {
             .into_iter()
             .enumerate()
             .map(|(idx, lua_v)| -> mlua::Result<(u32, Value)> {
-                // TODO this isn't technically safe. Vararg size isn't limited to u32.
+                // TODO this isn't a safe cast. Vararg size isn't limited to u32.
                 Ok((idx as u32, Value::from_lua(lua_v, lua)?))
             })
             .collect::<mlua::Result<Vec<(u32, Value)>>>()?;
@@ -72,7 +84,7 @@ impl<'lua> ToLua<'lua> for Value {
             }
             Value::Symbol(s, registry) => {
                 if registry {
-                    // TODO implement a LuaJsSymbol Registry? (config option?)
+                    // TODO implement a LuaJsSymbol Registry to allow for symmetric conversion? (config option?)
                     //  primitive table: `{ description: "symbol description" }` for use as keys.
                     unimplemented!("ToLua: Value::Symbol registry")
                 } else {

@@ -109,16 +109,13 @@ export class LuaState {
      */
     doStringSync<T extends any[]>(code: string, chunkName?: string): T;
 
-    // /**
-    //  * This is more like an event emitter than a callback. It can be invoked
-    //  * multiple times. Event Emitters were more difficult to construct than
-    //  * a reusable callback. This may change in the future.
-    //  *
-    //  * @param name
-    //  * @param cb
-    //  */
-    // registerFunction<T extends any[]>(name: string, cb: (args: T) => void): void;
-
+    /**
+     * Set a lua global function which calls back to the JS runtime as an event emitter
+     *
+     * @param name
+     * @param cb
+     */
+    registerEventListener<T extends any[]>(name: string, cb: (...args: T) => void): void;
 
     /**
      * Executes a Lua file synchronously.

@@ -11,8 +11,13 @@ path = "../lib.rs"
 crate-type = ["cdylib"]
 
 [build-dependencies]
-neon-build = "0.6.0"
+neon-build = "0.7.0"
 
-[dependencies]
-common = { path = "../common", features = ["luajit"]}
-neon = { version = "0.6.0", default-features = false, features = ["napi-runtime", "proc-macros"] }
+[dependencies.common]
+path = "../common"
+features = ["luajit"]
+
+[dependencies.neon]
+version = "0.7.0"
+default-features = false
+features = ["napi-runtime", "proc-macros", "event-queue-api"]

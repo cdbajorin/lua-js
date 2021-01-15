@@ -14,8 +14,9 @@ fn main(mut m: ModuleContext) -> NeonResult<()> {
     m.export_function("LuaState_doStringSync", luastate_do_string_sync)?;
     m.export_function("LuaState_doFileSync", luastate_do_file_sync)?;
     m.export_function("LuaState_reset", luastate_reset)?;
+    m.export_function("LuaState_close", luastate_close)?;
     m.export_function("LuaState_getGlobal", luastate_get_global)?;
     m.export_function("LuaState_setGlobal", luastate_set_global)?;
-
+    m.export_function("LuaState_registerEventListener", luastate_register_event_listener)?;
     Ok(())
 }

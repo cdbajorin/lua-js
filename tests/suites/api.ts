@@ -1,7 +1,10 @@
 import { Context } from "../index";
-import { Macro, OneOrMoreMacros } from "ava";
+import { CbExecutionContext, CbMacro, Macro, OneOrMoreCbMacros, OneOrMoreMacros } from "ava";
 import * as path from "path";
 
+/**
+ * Sync
+ */
 export const doFileSync: Macro<[], Context> = (t) => {
 
     const fivePlusFive = path.resolve(__dirname, "files", "five_plus_five.lua");
@@ -26,8 +29,27 @@ export const globals: Macro<[], Context> = (t) => {
 }
 globals.title = (version) => `${version}: API: set/get globals`;
 
+/**
+ * Event Emitter
+ */
+export const registerCallback: CbMacro<[], Context> = (t) => {
+    const lua = t.context.lua;
+    t.timeout(100, "event listener not called");
+    t.plan(1);
+    lua.registerEventListener("callMe", (...args) => {
+        t.deepEqual(args, [1, 2, 3]);
+        t.end();
+    });
+    lua.doStringSync("callMe(1,2,3)");
+}
+registerCallback.title = (version) => `${version}: API: registerCallback`;
+
 export const apiSuite: OneOrMoreMacros<[], Context> = [
     doFileSync,
     doStringSync,
     globals
+]
+
+export const cbApiSuite: OneOrMoreCbMacros<[], Context> = [
+    registerCallback
 ]

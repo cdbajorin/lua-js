@@ -17,7 +17,8 @@ pub type JsLuaState = JsBox<RefCell<LuaState>>;
 pub fn luastate_constructor(mut cx: FunctionContext) -> JsResult<JsLuaState> {
     let opt_config = cx.argument_opt(0);
     if let None = opt_config {
-        return Ok(cx.boxed(RefCell::new(LuaState::default())));
+        let libraries = StdLib::ALL_SAFE;
+        return Ok(cx.boxed(RefCell::new(LuaState::new(libraries))));
     };
     let options = opt_config
         .unwrap()
@@ -69,6 +70,19 @@ pub fn luastate_reset(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     Ok(cx.undefined())
 }
 
+// TODO error if re-used?.
+//  also need to figure out how to actually unref the Arc<EventQueue>.
+pub fn luastate_close(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let luastate = cx.argument::<JsLuaState>(0)?;
+    {
+        // reset our Lua context. This clears any queues that have been moved into the Lua
+        // function contexts, and clears our stored functions, which allows us to into_inner().
+        let mut luastate = luastate.borrow_mut();
+        luastate.reset();
+    }
+    Ok(cx.undefined())
+}
+
 /// LuaState instance method `setGlobal(name, value): boolean`
 pub fn luastate_set_global(mut cx: FunctionContext) -> JsResult<JsValue> {
     let luastate = cx.argument::<JsLuaState>(0)?;
@@ -90,6 +104,18 @@ pub fn luastate_get_global(mut cx: FunctionContext) -> JsResult<JsValue> {
     let luastate = luastate.borrow_mut();
 
     match luastate.get_global(var_name) {
+        Ok(v) => v.to_js(&mut cx),
+        Err(e) => cx.throw_error(e.to_string()),
+    }
+}
+
+pub fn luastate_register_event_listener(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let luastate = cx.argument::<JsLuaState>(0)?;
+    let varname = cx.argument::<JsString>(1)?.value(&mut cx);
+    let callback = cx.argument::<JsFunction>(2)?.root(&mut cx);
+    let mut luastate = luastate.borrow_mut();
+    let queue = cx.queue();
+    match luastate.register_event_listener(queue, varname, callback) {
         Ok(v) => v.to_js(&mut cx),
         Err(e) => cx.throw_error(e.to_string()),
     }
